@@ -1,3 +1,5 @@
+#Used Dr.Smay's code and class lecture to modify this code to HW requirements
+#Used ChatGPT to help debug and test logic for filling in missing code to meet HW requirements
 #region imports
 import sys
 from PyQt5 import QtWidgets as qtw
@@ -95,8 +97,7 @@ class MainWindow(qtw.QWidget, Ui_Form):
         self.RC.updatePlot()
 
     def SetUnits(self):
-        #JES Missing Code
-        pass
+        self.RC.updateUnits()
 
     def setNewPHigh(self):
         self.RC.setNewPHigh()

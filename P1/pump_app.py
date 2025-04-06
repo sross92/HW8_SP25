@@ -1,3 +1,5 @@
+#Used Dr.Smay's code and class lecture to modify this code to HW requirements
+#Used ChatGPT to help debug and test logic for filling in missing code to meet HW requirements
 #region imports
 import numpy as np
 import PyQt5.QtWidgets as qtw
@@ -71,7 +73,7 @@ class PumpCurve_GUI_Class(Ui_Form, qtw.QWidget):  #class for PumpCurve_GUI inher
         return True
         :return: boolean for if the operation was successful.
         '''
-        fname=#JES Missing Code # use qtw.QFileDialog.getOpenFileName
+        fname = qtw.QFileDialog.getOpenFileName(self, "Open Pump Data File", self.FilePath)
         oTF=len(fname[0])>0
         if oTF:
             self.FileName=fname[0]

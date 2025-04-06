@@ -1,3 +1,5 @@
+#Used Dr.Smay's code and class lecture to modify this code to HW requirements
+#Used ChatGPT to help debug and test logic for filling in missing code to meet HW requirements
 #region imorts
 import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
@@ -44,11 +46,11 @@ class Pump_Controller():
         :param data: 
         :return: 
         """
-        self.Model.PumpName = #JES Missing Code
+        self.Model.PumpName = data[0].strip()  # Assume first line is the pump name.
         #data[1] is the units line
         L=data[2].split()
-        self.Model.FlowUnits = #JES Missing Code
-        self.Model.HeadUnits = #JES Missing Code
+        self.Model.FlowUnits = L[0]   # e.g., "gpm"
+        self.Model.HeadUnits = L[1]   # e.g., "ft"
 
         # extracts flow, head and efficiency data and calculates coefficients
         self.SetData(data[3:])
@@ -67,11 +69,12 @@ class Pump_Controller():
         self.Model.EffData = np.array([])
 
         #parse new data
-        for L in data:
-            Cells=#JES Missing Code #parse the line into an array of strings
-            self.Model.FlowData=np.append(self.Model.FlowData, #JES Missing Code) #remove any spaces and convert string to a float
-            self.Model.HeadData=np.append(self.Model.HeadData, #JES Missing Code) #remove any spaces and convert string to a float
-            self.Model.EffData=np.append(self.Model.EffData, #JES Missing Code) #remove any spaces and convert string to a float
+        for line in data:
+            # Split the line into separate string tokens
+            Cells = line.split()
+            self.Model.FlowData=np.append(self.Model.FlowData, float(Cells[0]))
+            self.Model.HeadData=np.append(self.Model.HeadData, float(Cells[1]))
+            self.Model.EffData=np.append(self.Model.EffData, float(Cells[2]))
 
         #call least square fit for head and efficiency
         self.LSFit()
@@ -129,8 +132,25 @@ class Pump_View():
         headx, heady, headRSq = Model.LSFitHead.GetPlotInfo(3, npoints=500)
         effx, effy, effRSq = Model.LSFitEff.GetPlotInfo(3, npoints=500)
 
-        axes = self.ax
-        #JES Missing code (many lines to make the graph)
+        # Clear the current axes
+        self.ax.clear()
+        # Plot the head fit on the primary y-axis
+        self.ax.plot(headx, heady, label='Head Fit', color='blue')
+        self.ax.set_xlabel('Flow')
+        self.ax.set_ylabel('Head (' + Model.HeadUnits + ')', color='blue')
+
+        # Create a secondary y-axis for the efficiency fit
+        ax2 = self.ax.twinx()
+        ax2.plot(effx, effy, label='Efficiency Fit', color='red')
+        ax2.set_ylabel('Efficiency (%)', color='red')
+
+        # Set the title for the plot
+        self.ax.set_title('Pump Curve Fit')
+
+        # Combine legends from both axes
+        lines, labels = self.ax.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        self.ax.legend(lines + lines2, labels + labels2, loc='upper left')
 
         self.canvas.draw()
 

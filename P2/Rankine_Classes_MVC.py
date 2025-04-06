@@ -1,3 +1,5 @@
+#Used Dr.Smay's code and class lecture to modify this code to HW requirements
+#Used ChatGPT to help debug and test logic for filling in missing code to meet HW requirements
 #region imports
 import math
 from Calc_state import *
@@ -70,11 +72,14 @@ class rankineView():
             self.le_TurbineInletCondition.setText("1.0")
             self.le_TurbineInletCondition.setEnabled(False)
         else:
-            pass
-            #JES Missing Code
-            #step 1: get saturated properties at PHigh
-            #step 2: convert the saturation temperature to proper units
-            #step 3:  update the text in the le_TurbineInletCondition widget
+            # When THigh radio button is selected:
+            # Step 1: Get saturated properties at p_high
+            satPropsHigh = Model.steam.getsatProps_p(Model.p_high)
+            # Step 2: Convert the saturation temperature if working in English units
+            T_sat = satPropsHigh.tsat if SI else UC.C_to_F(satPropsHigh.tsat)
+            # Step 3: Update the turbine inlet condition widget with the saturation temperature
+            self.le_TurbineInletCondition.setText("{:.2f}".format(T_sat))
+            self.le_TurbineInletCondition.setEnabled(True)
 
         # endregion
         x = self.rdo_Quality.isChecked()
@@ -89,12 +94,33 @@ class rankineView():
                  finally, we need to call the function self.SelectQualityOrTHigh()
                  :return:
                  """
-        #JES Missing Code
-        pass
+        SI = self.rb_SI.isChecked()
+        # Use a pressure conversion factor (PCF): input is bar in SI or psi in English
+        PCF = 1 if SI else UC.psi_to_bar
+        try:
+            p_high_input = float(self.le_PHigh.text())
+            p_high_SI = p_high_input * PCF
+            # Retrieve saturation properties at the new high pressure
+            satPropsHigh = Model.steam.getsatProps_p(p_high_SI)
+            # Update the high-pressure saturation properties label
+            self.lbl_SatPropHigh.setText(satPropsHigh.getTextOutput(SI=SI))
+        except Exception as e:
+            self.lbl_SatPropHigh.setText("Invalid Input")
+        # Also update the turbine inlet condition in case THigh is used
+        self.selectQualityOrTHigh(Model)
 
     def setNewPLow(self, Model=None):
-        #JES Missing Code
-        pass
+        SI = self.rb_SI.isChecked()
+        PCF = 1 if SI else UC.psi_to_bar
+        try:
+            p_low_input = float(self.le_PLow.text())
+            p_low_SI = p_low_input * PCF
+            # Retrieve saturation properties at the new low pressure
+            satPropsLow = Model.steam.getsatProps_p(p_low_SI)
+            # Update the low-pressure saturation properties label
+            self.lbl_SatPropLow.setText(satPropsLow.getTextOutput(SI=SI))
+        except Exception as e:
+            self.lbl_SatPropLow.setText("Invalid Input")
 
     def outputToGUI(self, Model=None):
         #unpack the args
@@ -124,22 +150,53 @@ class rankineView():
         :param Model:  a reference to the model
         :return:
         """
-        #Step 0. update the outputs
+        SI = Model.SI
+
+        # Step 0: Refresh outputs (this updates labels and the plot)
         self.outputToGUI(Model=Model)
-        # Update units displayed on labels
 
-        #Step 1. Update pressures for PHigh and PLow
-        pCF=1 if Model.SI else UC.bar_to_psi
-        #JES Missing Code
+        # Step 1: Update the pressure input fields using the base values from the model.
+        # Assume Model.p_high and Model.p_low are stored in SI (bar).
+        if Model.p_high is not None:
+            # Convert from SI (bar) to English (psi) if necessary.
+            p_high_display = Model.p_high if SI else Model.p_high * UC.bar_to_psi
+            self.le_PHigh.setText("{:.2f}".format(p_high_display))
+        if Model.p_low is not None:
+            p_low_display = Model.p_low if SI else Model.p_low * UC.bar_to_psi
+            self.le_PLow.setText("{:.2f}".format(p_low_display))
 
-        #Step 2. Update THigh if it is not None
+        # Step 2: Update turbine inlet temperature if not in quality mode.
         if not self.rdo_Quality.isChecked():
-            #JES Missing Code
-            pass
+            # If Model.t_high is provided, it is stored in SI.
+            # Otherwise, recalc from saturated properties.
+            if Model.t_high is not None:
+                T_base = Model.t_high
+            else:
+                satPropsHigh = Model.steam.getsatProps_p(Model.p_high)
+                T_base = satPropsHigh.tsat
+            T_display = T_base if SI else UC.C_to_F(T_base)
+            self.le_TurbineInletCondition.setText("{:.2f}".format(T_display))
 
-        #Step 3. Update the units for labels
-        #JES Missing Code
-        pass
+        # Step 3: Update the unit labels for output fields.
+        if SI:
+            self.lbl_H1Units.setText("kJ/kg")
+            self.lbl_H2Units.setText("kJ/kg")
+            self.lbl_H3Units.setText("kJ/kg")
+            self.lbl_H4Units.setText("kJ/kg")
+            self.lbl_TurbineWorkUnits.setText("kJ/kg")
+            self.lbl_PumpWorkUnits.setText("kJ/kg")
+            self.lbl_HeatAddedUnits.setText("kJ/kg")
+        else:
+            self.lbl_H1Units.setText("BTU/lb")
+            self.lbl_H2Units.setText("BTU/lb")
+            self.lbl_H3Units.setText("BTU/lb")
+            self.lbl_H4Units.setText("BTU/lb")
+            self.lbl_TurbineWorkUnits.setText("BTU/lb")
+            self.lbl_PumpWorkUnits.setText("BTU/lb")
+            self.lbl_HeatAddedUnits.setText("BTU/lb")
+
+        # Final refresh to ensure that the plot and labels are up to date.
+        self.outputToGUI(Model=Model)
 
     def print_summary(self, Model=None):
         """
@@ -409,7 +466,6 @@ class rankineController():
         #Switching units should not change the model, but should update the view
         self.Model.SI=self.View.rb_SI.isChecked()
         self.View.updateUnits(Model=self.Model)
-        pass
 
     def selectQualityOrTHigh(self):
         self.View.selectQualityOrTHigh(self.Model)
